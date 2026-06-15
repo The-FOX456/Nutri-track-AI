@@ -1,0 +1,272 @@
+
+<link rel="stylesheet" href="style.css">
+<h2 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">NutriTrack dark calorie and nutrition tracker</h2>
+
+<div class="shell">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div>
+      <div class="hdr-brand">Nutri<span>Track</span></div>
+      <div class="hdr-date" id="hdr-date"></div>
+    </div>
+    <div class="hdr-actions">
+      <button class="auth-btn" id="auth-btn" onclick="handleAuthButtonClick()">Sign in</button>
+      <div class="hdr-streak"><i class="ti ti-flame" aria-hidden="true"></i> <span id="streak-count">5</span> day streak</div>
+    </div>
+  </div>
+
+  <!-- PAGES -->
+  <div style="overflow:hidden;position:relative">
+
+    <!-- HOME -->
+    <div class="page active" id="page-home">
+      <div class="auth-gate" id="auth-gate">
+        <div class="auth-gate-card">
+          <div class="auth-gate-title">Sign in to view your dashboard</div>
+          <div class="auth-gate-text">Your food log, hydration, and plan stay private and load automatically after you sign in with Google.</div>
+        </div>
+      </div>
+      <div id="home-content">
+      <div class="ring-section">
+        <div class="ring-wrap">
+          <svg viewBox="0 0 180 180" role="img" aria-label="Calorie ring showing daily progress">
+            <circle cx="90" cy="90" r="78" fill="none" stroke="#1a1a28" stroke-width="14"/>
+            <circle cx="90" cy="90" r="78" fill="none" stroke="#4ADE80" stroke-width="14"
+              stroke-linecap="round" stroke-dasharray="490" id="ring-dash" stroke-dashoffset="490"
+              style="transition:stroke-dashoffset 0.7s ease;filter:drop-shadow(0 0 6px rgba(74,222,128,0.4))"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-cal" id="ring-eaten">0</div>
+            <div class="ring-sub">kcal eaten</div>
+            <div class="ring-goal" id="ring-remaining">— left</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="macro-row">
+        <div class="macro-pill">
+          <div class="macro-pill-top">
+            <span class="macro-pill-name">Protein</span>
+            <span class="macro-pill-g" style="color:var(--blue)" id="mp-p">0g</span>
+          </div>
+          <div class="macro-bar"><div class="macro-bar-fill" id="mb-p" style="width:0%;background:var(--blue)"></div></div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px" id="mg-p">/ — g</div>
+        </div>
+        <div class="macro-pill">
+          <div class="macro-pill-top">
+            <span class="macro-pill-name">Carbs</span>
+            <span class="macro-pill-g" style="color:var(--amber)" id="mp-c">0g</span>
+          </div>
+          <div class="macro-bar"><div class="macro-bar-fill" id="mb-c" style="width:0%;background:var(--amber)"></div></div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px" id="mg-c">/ — g</div>
+        </div>
+        <div class="macro-pill">
+          <div class="macro-pill-top">
+            <span class="macro-pill-name">Fat</span>
+            <span class="macro-pill-g" style="color:var(--purple)" id="mp-f">0g</span>
+          </div>
+          <div class="macro-bar"><div class="macro-bar-fill" id="mb-f" style="width:0%;background:var(--purple)"></div></div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px" id="mg-f">/ — g</div>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label"><i class="ti ti-target" aria-hidden="true"></i> Goal</div>
+          <div class="stat-val" id="s-goal">—<span class="stat-unit"> kcal</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><i class="ti ti-activity" aria-hidden="true"></i> BMI</div>
+          <div class="stat-val" id="s-bmi">—<span class="stat-unit"></span></div>
+          <div style="font-size:10px;margin-top:3px" id="s-bmi-cat"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><i class="ti ti-droplet" aria-hidden="true"></i> Water</div>
+          <div class="stat-val" id="s-water">0<span class="stat-unit"> ml</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><i class="ti ti-salad" aria-hidden="true"></i> Meals</div>
+          <div class="stat-val" id="s-meals">0<span class="stat-unit"> logged</span></div>
+        </div>
+      </div>
+
+      <div class="water-section">
+        <div class="water-title">
+          <span><i class="ti ti-droplet" aria-hidden="true"></i> Hydration</span>
+          <span id="water-label">0 / 2000 ml</span>
+        </div>
+        <div class="water-cups" id="water-cups"></div>
+      </div>
+
+      <div class="section-title" style="margin-bottom:8px">
+        <span><i class="ti ti-sun" aria-hidden="true" style="margin-right:4px"></i>This week</span>
+      </div>
+      <div class="streak-row" id="streak-row"></div>
+
+      <div class="section-title">
+        <span>Today's food</span>
+        <button onclick="goPage('log')">+ Add</button>
+      </div>
+      <div id="home-food-list"></div>
+      <div style="height:16px"></div>
+      </div>
+    </div>
+
+    <!-- LOG -->
+    <div class="page" id="page-log">
+      <div class="log-form">
+        <div class="section-title" style="margin-bottom:12px"><span>Add food</span></div>
+        <div class="form-row"><div class="field"><label>Food name</label><input type="text" id="f-name" placeholder="e.g. grilled chicken, rice..."/></div></div>
+        <div class="form-row form-row-2">
+          <div class="field"><label>Calories</label><input type="number" id="f-cal" placeholder="kcal" min="0"/></div>
+          <div class="field"><label>Meal</label>
+            <select id="f-meal">
+              <option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row form-row-4" style="margin-bottom:12px">
+          <div class="field"><label>Protein</label><input type="number" id="f-p" placeholder="g" min="0"/></div>
+          <div class="field"><label>Carbs</label><input type="number" id="f-c" placeholder="g" min="0"/></div>
+          <div class="field"><label>Fat</label><input type="number" id="f-f" placeholder="g" min="0"/></div>
+          <div class="field"><label>Fiber</label><input type="number" id="f-fi" placeholder="g" min="0"/></div>
+        </div>
+        <button class="submit-btn" onclick="addFood()">Add to log</button>
+        <div class="msg" id="log-msg"></div>
+      </div>
+
+      <div class="quick-title">Quick add</div>
+      <div class="quick-grid" id="quick-grid"></div>
+
+      <div class="section-title"><span>Today's log</span></div>
+      <div id="log-food-list"></div>
+      <div style="height:16px"></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="page" id="page-profile">
+      <div class="profile-form">
+        <div class="section-title" style="margin-bottom:12px"><span>Your details</span></div>
+        <div class="form-row form-row-2">
+          <div class="field"><label>Age</label><input type="number" id="p-age" placeholder="years" min="10" max="99"/></div>
+          <div class="field"><label>Sex</label><select id="p-sex"><option value="male">Male</option><option value="female">Female</option></select></div>
+        </div>
+        <div class="form-row form-row-2">
+          <div class="field"><label>Height (cm)</label><input type="number" id="p-h" placeholder="e.g. 172"/></div>
+          <div class="field"><label>Weight (kg)</label><input type="number" id="p-w" placeholder="e.g. 65"/></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Activity level</label>
+            <select id="p-act">
+              <option value="1.2">Sedentary — desk job, no exercise</option>
+              <option value="1.375">Light — 1-3 days/week</option>
+              <option value="1.55" selected>Moderate — 3-5 days/week</option>
+              <option value="1.725">Very active — 6-7 days/week</option>
+              <option value="1.9">Athlete — 2x daily</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Goal</label>
+            <select id="p-goal">
+              <option value="lose">Lose weight (−500 kcal)</option>
+              <option value="maintain" selected>Maintain weight</option>
+              <option value="gain">Build muscle (+300 kcal)</option>
+            </select>
+          </div>
+        </div>
+        <button class="submit-btn" onclick="calcProfile()">Calculate</button>
+      </div>
+
+      <div id="profile-stats" style="display:none">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">BMR</div>
+            <div class="stat-val" id="ps-bmr">—<span class="stat-unit"> kcal</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">TDEE</div>
+            <div class="stat-val" id="ps-tdee">—<span class="stat-unit"> kcal</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">BMI</div>
+            <div class="stat-val" id="ps-bmi">—</div>
+            <div style="font-size:10px;margin-top:4px" id="ps-bmi-cat"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Ideal weight</div>
+            <div class="stat-val" id="ps-ideal">—<span class="stat-unit"> kg</span></div>
+          </div>
+        </div>
+        <div class="profile-form" style="margin-top:0">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">BMI range</div>
+          <div class="bmi-bar-wrap">
+            <div class="bmi-bar-fill" id="bmi-fill" style="width:100%"></div>
+            <div class="bmi-pointer" id="bmi-ptr"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:4px">
+            <span>Under</span><span>Normal</span><span>Over</span><span>Obese</span>
+          </div>
+        </div>
+      </div>
+      <div style="height:16px"></div>
+    </div>
+
+    <!-- PLAN -->
+    <div class="page" id="page-plan">
+      <div id="plan-empty" class="plan-empty">
+        <i class="ti ti-chart-pie" aria-hidden="true"></i>
+        <div style="font-size:14px;color:var(--text2);margin-bottom:6px">No plan yet</div>
+        <div style="font-size:12px">Fill in your profile and hit Calculate first.</div>
+      </div>
+      <div id="plan-body" style="display:none">
+        <div class="plan-hero">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Daily calorie target</div>
+          <div class="plan-cal-big" id="pl-cal">—</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px" id="pl-goal-desc">—</div>
+          <div class="plan-macro-split">
+            <div class="split-item"><div class="split-val" style="color:var(--blue)" id="pl-p">—</div><div class="split-label">Protein g</div></div>
+            <div class="split-item"><div class="split-val" style="color:var(--amber)" id="pl-c">—</div><div class="split-label">Carbs g</div></div>
+            <div class="split-item"><div class="split-val" style="color:var(--purple)" id="pl-f">—</div><div class="split-label">Fat g</div></div>
+          </div>
+        </div>
+        <div class="tip-card" id="pl-tip1"></div>
+        <div class="tip-card" id="pl-tip2"></div>
+        <div class="tip-card" id="pl-tip3"></div>
+        <button class="ai-cta" onclick="askAI()"><i class="ti ti-sparkles" aria-hidden="true"></i> Get a personalized 7-day meal plan ↗</button>
+      </div>
+      <div style="height:16px"></div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="nav">
+    <button class="nav-btn active" id="nav-home" onclick="goPage('home')">
+      <i class="ti ti-home" aria-hidden="true"></i>Home
+    </button>
+    <button class="nav-btn" id="nav-log" onclick="goPage('log')">
+      <i class="ti ti-plus-circle" aria-hidden="true"></i>Log
+    </button>
+    <button class="nav-btn" id="nav-profile" onclick="goPage('profile')">
+      <i class="ti ti-user" aria-hidden="true"></i>Profile
+    </button>
+    <button class="nav-btn" id="nav-plan" onclick="goPage('plan')">
+      <i class="ti ti-chart-pie" aria-hidden="true"></i>Plan
+    </button>
+  </div>
+</div>
+<div class="auth-modal" id="auth-modal" style="display:none">
+  <div class="auth-modal-card">
+    <div class="auth-modal-title">Sign in</div>
+    <div class="auth-modal-text">Use your Google account to unlock your private dashboard. You can also use an email for the demo.</div>
+    <button type="button" class="google-signin-btn" id="google-signin-btn" onclick="handleGoogleButtonClick()">Continue with Google</button>
+    <div class="auth-divider">or continue with email</div>
+    <input class="auth-modal-input" id="auth-email" type="email" placeholder="you@example.com" />
+    <button class="submit-btn" id="auth-submit" onclick="submitAuthForm()">Continue</button>
+    <button class="auth-cancel-btn" id="auth-cancel" onclick="closeAuthModal()">Cancel</button>
+  </div>
+</div>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="script.js"></script>
