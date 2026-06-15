@@ -1,11 +1,25 @@
 
-var S={
-  foods:[],cal:0,prot:0,carbs:0,fat:0,
-  goal:2000,gP:150,gC:250,gF:67,
-  water:0,
-  profile:null,
-  streak:[true,true,true,true,true,false,false]
-};
+var STORAGE_KEY='fitnessAppData';
+var AUTH_STORAGE_KEY='fitnessAppAuth';
+var GOOGLE_CLIENT_ID='YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+var auth={user:null};
+
+function isGoogleConfigured(){
+  return !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID.indexOf('YOUR_GOOGLE_CLIENT_ID')===-1);
+}
+
+function getDefaultState(){
+  return {
+    foods:[],cal:0,prot:0,carbs:0,fat:0,
+    goal:2000,gP:150,gC:250,gF:67,
+    water:0,
+    profile:null,
+    streak:[true,true,true,true,true,false,false],
+    activePage:'home'
+  };
+}
+
+var S=getDefaultState();
 
 var QUICK=[
   {n:'White rice (1 cup)',cal:206,p:4,c:45,f:0,fi:1},
@@ -20,11 +34,194 @@ var QUICK=[
   {n:'Sweet potato',cal:103,p:2,c:24,f:0,fi:4}
 ];
 
+function getStorageKey(){
+  if(auth.user && auth.user.id){
+    return STORAGE_KEY+'_'+auth.user.id.replace(/[^a-z0-9]/gi,'');
+  }
+  return STORAGE_KEY;
+}
+
+function setAuthUI(){
+  var btn=document.getElementById('auth-btn');
+  var gate=document.getElementById('auth-gate');
+  var content=document.getElementById('home-content');
+  var nav=document.querySelector('.nav');
+  if(!btn)return;
+  if(auth.user){
+    btn.textContent='Sign out';
+    btn.classList.add('is-user');
+    if(gate)gate.style.display='none';
+    if(content)content.style.display='block';
+    if(nav)nav.style.display='flex';
+  }else{
+    btn.textContent='Sign in';
+    btn.classList.remove('is-user');
+    if(gate)gate.style.display='block';
+    if(content)content.style.display='none';
+    if(nav)nav.style.display='none';
+  }
+}
+
+function saveAuthUser(user){
+  auth.user=user;
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+}
+
+function clearAuthUser(){
+  auth.user=null;
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+}
+
+function handleGoogleCredentialResponse(response){
+  if(!response||!response.credential){return;}
+  var payload=JSON.parse(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+  var user={
+    id:payload.sub,
+    email:payload.email||'',
+    name:payload.name||payload.email||'Google user',
+    photo:payload.picture||'',
+    provider:'google'
+  };
+  saveAuthUser(user);
+  setAuthUI();
+  loadData();
+  renderAll();
+  goPage(S.activePage||'home');
+}
+
+function initializeGoogleAuth(){
+  var button=document.getElementById('google-signin-btn');
+  if(!window.google||!window.google.accounts||!window.google.accounts.id||!isGoogleConfigured()){
+    if(button){button.textContent='Continue with Google';}
+    return false;
+  }
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredentialResponse,
+    auto_select: false,
+    use_fedcm_for_prompt: true
+  });
+  return true;
+}
+
+function signInWithGoogleDemo(){
+  var user={
+    id:'google-demo-user',
+    email:'google-user@example.com',
+    name:'Google user',
+    provider:'google-demo'
+  };
+  saveAuthUser(user);
+  closeAuthModal();
+  setAuthUI();
+  loadData();
+  renderAll();
+  goPage(S.activePage||'home');
+}
+
+function handleGoogleButtonClick(){
+  if(window.google&&window.google.accounts&&window.google.accounts.id&&isGoogleConfigured()){
+    google.accounts.id.prompt();
+    return;
+  }
+  signInWithGoogleDemo();
+}
+
+function openAuthModal(){
+  var modal=document.getElementById('auth-modal');
+  var input=document.getElementById('auth-email');
+  if(modal){modal.style.display='flex';}
+  if(input){setTimeout(function(){input.focus();},50);}
+}
+
+function closeAuthModal(){
+  var modal=document.getElementById('auth-modal');
+  if(modal){modal.style.display='none';}
+}
+
+function submitAuthForm(){
+  var input=document.getElementById('auth-email');
+  var email=input?input.value.trim():'';
+  if(!email||!email.includes('@')){alert('Please enter a valid email address.');return;}
+  var user={
+    id:email.toLowerCase(),
+    email:email.toLowerCase(),
+    name:email.split('@')[0],
+    provider:'google-demo'
+  };
+  saveAuthUser(user);
+  closeAuthModal();
+  setAuthUI();
+  loadData();
+  renderAll();
+  goPage(S.activePage||'home');
+}
+
+function signInFallback(){
+  openAuthModal();
+  return null;
+}
+
+function handleAuthButtonClick(){
+  if(auth.user){
+    clearAuthUser();
+    S=getDefaultState();
+    setAuthUI();
+    renderAll();
+    goPage('home');
+    return;
+  }
+  if(window.google&&window.google.accounts&&window.google.accounts.id&&isGoogleConfigured()){
+    google.accounts.id.prompt();
+    return;
+  }
+  signInFallback();
+}
+
 function goPage(p){
+  if(!auth.user && p!=='home'){
+    p='home';
+  }
   document.querySelectorAll('.page').forEach(function(el){el.classList.remove('active')});
   document.querySelectorAll('.nav-btn').forEach(function(el){el.classList.remove('active')});
-  document.getElementById('page-'+p).classList.add('active');
-  document.getElementById('nav-'+p).classList.add('active');
+  var page=document.getElementById('page-'+p);
+  var navBtn=document.getElementById('nav-'+p);
+  if(page){page.classList.add('active');}
+  if(navBtn){navBtn.classList.add('active');}
+  S.activePage=p;
+  saveData();
+}
+
+function saveData(){
+  localStorage.setItem(getStorageKey(), JSON.stringify(S));
+  if(auth.user){saveAuthUser(auth.user);}
+}
+
+function loadData(){
+  try{
+    S=getDefaultState();
+    var saved=localStorage.getItem(getStorageKey());
+    if(!saved){return false;}
+    var parsed=JSON.parse(saved);
+    if(!parsed||typeof parsed!=='object'){return false;}
+    S=Object.assign(getDefaultState(), parsed);
+    if(!Array.isArray(S.foods)){S.foods=[];}
+    if(!Array.isArray(S.streak)){S.streak=getDefaultState().streak;}
+    if(typeof S.profile!=='object'||S.profile===null){S.profile=null;}
+    if(!S.activePage){S.activePage='home';}
+    return true;
+  }catch(e){return false;}
+}
+
+function restoreProfileForm(){
+  if(!S.profile){return;}
+  document.getElementById('p-age').value=S.profile.age||'';
+  document.getElementById('p-sex').value=S.profile.sex||'male';
+  document.getElementById('p-h').value=S.profile.h||'';
+  document.getElementById('p-w').value=S.profile.w||'';
+  document.getElementById('p-act').value=S.profile.act||'1.55';
+  document.getElementById('p-goal').value=S.profile.goal||'maintain';
+  calcProfile();
 }
 
 function addFood(){
@@ -42,6 +239,7 @@ function addFood(){
   document.getElementById('log-msg').textContent='\u2713 '+name+' added ('+cal+' kcal)';
   setTimeout(function(){document.getElementById('log-msg').textContent=''},2000);
   renderAll();
+  saveData();
 }
 
 function quickAdd(i){
@@ -49,13 +247,16 @@ function quickAdd(i){
   S.foods.push({name:q.n,cal:q.cal,p:q.p,c:q.c,f:q.f,fi:q.fi,meal:'Snack'});
   S.cal+=q.cal;S.prot+=q.p;S.carbs+=q.c;S.fat+=q.f;
   renderAll();
+  saveData();
 }
 
 function removeFood(i){
   var it=S.foods[i];
   S.cal-=it.cal;S.prot-=it.p;S.carbs-=it.c;S.fat-=it.f;
   S.foods.splice(i,1);
+  saveData();
   renderAll();
+  saveData();
 }
 
 function renderAll(){
@@ -89,6 +290,8 @@ function renderStats(){
   document.getElementById('s-goal').innerHTML=S.goal+'<span class="stat-unit"> kcal</span>';
   document.getElementById('s-meals').innerHTML=S.foods.length+'<span class="stat-unit"> logged</span>';
   document.getElementById('s-water').innerHTML=(S.water*250)+'<span class="stat-unit"> ml</span>';
+  var streakEl=document.getElementById('streak-count');
+  if(streakEl){streakEl.textContent=(S.streak||[]).filter(Boolean).length;}
 }
 
 function renderFoodLists(){
@@ -119,6 +322,9 @@ function initWater(){
   var html='';
   for(var i=0;i<8;i++){html+='<div class="wcup" id="wc'+i+'" onclick="setWater('+(i+1)+')" aria-label="Cup '+(i+1)+'"><i class="ti ti-droplet" aria-hidden="true"></i></div>';}
   document.getElementById('water-cups').innerHTML=html;
+  for(var i=0;i<8;i++){document.getElementById('wc'+i).classList.toggle('on',i<S.water);}
+  document.getElementById('water-label').textContent=(S.water*250)+' / 2000 ml';
+  saveData();
 }
 
 function setWater(n){
@@ -126,6 +332,7 @@ function setWater(n){
   for(var i=0;i<8;i++){document.getElementById('wc'+i).classList.toggle('on',i<S.water);}
   document.getElementById('water-label').textContent=(S.water*250)+' / 2000 ml';
   document.getElementById('s-water').innerHTML=(S.water*250)+'<span class="stat-unit"> ml</span>';
+  saveData();
 }
 
 function initStreak(){
@@ -184,7 +391,7 @@ function calcProfile(){
   document.getElementById('profile-stats').style.display='';
   document.getElementById('s-bmi').innerHTML=bmi+'<span class="stat-unit"></span>';
   document.getElementById('s-bmi-cat').innerHTML='<span style="color:'+bmiColor+'">'+bmiCat+'</span>';
-  renderPlan();renderAll();
+  renderPlan();renderAll();saveData();
 }
 
 function renderPlan(){
@@ -212,4 +419,29 @@ function askAI(){
   sendPrompt('Create a detailed 7-day meal plan for a '+p.age+'-year-old '+p.sex+', '+p.h+'cm, '+p.w+'kg, goal: '+p.goal+' weight. Daily target: '+p.tCal+' kcal | Protein: '+p.gP+'g | Carbs: '+p.gC+'g | Fat: '+p.gF+'g. Include affordable foods available in Mozambique like rice, beans, vegetables, chicken, fish, and fruit.');
 }
 
-initWater();initStreak();initDate();initQuick();renderAll();
+function initAuth(){
+  try{
+    var savedUser=JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY));
+    if(savedUser){
+      auth.user=savedUser;
+    }
+  }catch(e){}
+  initializeGoogleAuth();
+  setAuthUI();
+  if(auth.user){
+    loadData();
+    if(S.profile){restoreProfileForm();}
+    else{renderAll();}
+    goPage(S.activePage||'home');
+  }else{
+    S=getDefaultState();
+    renderAll();
+    goPage('home');
+  }
+}
+
+initAuth();
+initWater();
+initStreak();
+initDate();
+initQuick();
